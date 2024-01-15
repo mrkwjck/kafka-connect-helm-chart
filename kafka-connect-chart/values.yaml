@@ -1,0 +1,57 @@
+replicaCount: 2
+
+image:
+  repository: kafka-connect-customized
+  pullPolicy: IfNotPresent
+  tag: 1.2.0
+  command:
+    exec: /opt/bitnami/kafka/bin/connect-distributed.sh
+    args:
+      - /opt/bitnami/kafka/config/connect-distributed.properties
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+connectors:
+  - name: mssql-source
+    config:
+      connector.class: io.confluent.connect.jdbc.JdbcSourceConnector
+      connection.url: jdbc:sqlserver://host.minikube.internal:1433;databaseName=example;selectMethod=cursor;responseBuffering=adaptive;encrypt=false;
+      connection.user: example
+      connection.password: P@ssword
+      dialect.name: SqlServerDatabaseDialect
+      mode: timestamp
+      timestamp.column.name: cart_created_timestamp
+      batch.max.rows: 100000
+      numeric.mapping: best_fit
+      poll.interval.ms: 1000
+      table.whitelist: cart_product
+      table.types: VIEW
+      tasks.max: 1
+      topic.prefix: ""
+      validate.non.null: true
+
+

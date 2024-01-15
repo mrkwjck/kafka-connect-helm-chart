@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-connect-config
+  namespace: {{ .Release.Namespace }}
+data:
+  connect-distributed.properties: |-
+    bootstrap.servers=host.minikube.internal:9092
+    group.id=kafka-connect-cluster
+    key.converter=org.apache.kafka.connect.json.JsonConverter
+    value.converter=org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable=true
+    value.converter.schemas.enable=true
+    offset.storage.topic=connect-offsets
+    offset.storage.replication.factor=1
+    config.storage.topic=connect-configs
+    config.storage.replication.factor=1
+    status.storage.topic=connect-status
+    status.storage.replication.factor=1
+    plugin.path=/opt/bitnami/kafka/libs/connectors
+  connect-log4j.properties: |-
+    log4j.rootLogger=DEBUG, stdout, connectAppender
+    log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+    log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+    log4j.appender.connectAppender=org.apache.log4j.DailyRollingFileAppender
+    log4j.appender.connectAppender.DatePattern='.'yyyy-MM-dd-HH
+    log4j.appender.connectAppender.File=${kafka.logs.dir}/connect.log
+    log4j.appender.connectAppender.layout=org.apache.log4j.PatternLayout
+    connect.log.pattern=[%d] %p %m (%c:%L)%n
+    log4j.appender.stdout.layout.ConversionPattern=${connect.log.pattern}
+    log4j.appender.connectAppender.layout.ConversionPattern=${connect.log.pattern}
+    log4j.logger.org.apache.zookeeper=ERROR
+    log4j.logger.org.reflections=ERROR
+  {{- range .Values.connectors }}
+  connector-config-{{ .name }}.json: |-
+    {{ mustToJson . }}
+  {{- end }}
